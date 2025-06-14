@@ -128,27 +128,26 @@ export const login= async (req,res)=>{
 	}
 } 
 
-export const logout= async (req,res)=>{
-  try{
-		const refreshToken=req.cookies.refreshToken;
-		if(!refreshToken){
-			return res.status(401).json({ error: "Refresh token not found" });
+export const logout = async (req, res) => {
+	try {
+		const refreshToken = req.cookies.refreshToken;
+		if (refreshToken) {
+			const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET_REFRESH);
+			await redis.del(`refresh_token:${decoded.userId}`);
 		}
-		await redis.del(`refreshToken:${req.user._id}`);
+
 		res.clearCookie("accessToken");
 		res.clearCookie("refreshToken");
-		res.status(200).json({ message: "User logged out successfully" });
+		res.json({ message: "Logged out successfully" });
+	} catch (error) {
+		console.log("Error in logout controller", error.message);
+		res.status(500).json({ message: "Server error", error: error.message });
 	}
-	catch(error){
-		console.log("error in logout",error.message);
-		
-		res.status(500).json({ error: "Internal server error" });
-	}
-} 
+};
 
 export const refreshToken= async (req,res)=>{
 	try{
-		const {refreshToken}=req.cookies;
+		const refreshToken=req.cookies.refreshToken;
 		if(!refreshToken){
 			return res.status(401).json({ error: "Refresh token not found" });
 		}
